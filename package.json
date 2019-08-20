@@ -1,6 +1,6 @@
 {
   "name": "db-stager",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": false,
   "scripts": {
     "debug_windows": "node --inspect index.js",
