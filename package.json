@@ -15,13 +15,5 @@
     "mysql2": "latest",
     "mysqldump": "^3.0.0",
     "pg-minify": "^1.4.1"
-  },
-  "devDependencies": {
-    "release-it": "^12.3.5"
-  },
-  "release-it": {
-    "github": {
-      "release": true
-    }
   }
 }
