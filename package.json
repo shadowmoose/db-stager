@@ -1,0 +1,18 @@
+{
+  "name": "db-stager",
+  "version": "1.0.0",
+  "private": false,
+  "scripts": {
+    "debug_windows": "node --inspect index.js"
+  },
+  "dependencies": {
+    "command-line-args": "^5.1.1",
+    "dockerode": "^2.5.8",
+    "express": "^4.17.1",
+    "glob": "^7.1.4",
+    "js-yaml": "^3.13.1",
+    "mysql2": "latest",
+    "mysqldump": "^3.0.0",
+    "pg-minify": "^1.4.1"
+  }
+}
