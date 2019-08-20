@@ -16,13 +16,10 @@ Node.js, and Docker (daemon installed & running). You do not need to have any Do
 ## Installation & Set Up:
 Install the required Node packages by running ```npm install db-stager```.
 
-Generate the configuration file by calling ```node ./indexex.js --build_config```. This will generate a configuration file with the default values set, and you are going to want to edit them before launch. You may also use command-line parameters, but these are not yet finalized or documented. See [config.js](./config.js).
-
-## Running:
-For now, the easiest way is to manually launch the server via ```node ./index.jsjs```. There is built-in support for importing as a Node library, but this needs further documentation, and the API is not yet finalized.
+Generate the configuration file by calling ```node ./index.js --build_config```. This will generate a configuration file with the default values set, and you are going to want to edit them before launch. You may also use command-line parameters, but these are not yet finalized or documented. See [config.js](./config.js).
 
 
-## Usage in Testing Frameworks:
+## Using db-stager in Testing Frameworks:
 *This is a sample way to use this application. Your mileage may vary.*
 
 Since each test in most testing libraries is run within its own thread, and because starting the initial Docker container is somewhat slow for multiple unit tests, it is simplest to initialize the Docker container inside a [globalSetup/globalTeardown](https://jestjs.io/docs/en/configuration.html#globalsetup-string) file. 
