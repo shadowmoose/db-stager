@@ -5,7 +5,7 @@ const express = require('express');
 const readline = require('readline');
 const db_tester = require('./test-utils/db-tester');
 const client_api = require('./test-utils/client-api');
-const index = express();
+const app = express();
 
 
 const sqlDefs = {
@@ -25,15 +25,16 @@ const dockerDefs = args.use_docker? {
 const HTTP_PORT = args.http_port;
 const MIGRATIONS_DIR = args.migrations;
 const TABLES_DIR = args.tables;
-const PROGRAM_NAME = `Mike's Staging Tool`;
-let SAVE_SQL_PATH = args.save_file;
+const PROGRAM_NAME = `db-stager`;
+let SAVE_SQL_PATH = args.save_file? args.save_file : null;
+let server = null;
 
 
 /** Set on init, this is a lambda to rebuild the DB data from SQL scripts. */
 let rebuilding = true;
 
 
-index.get('/rebuild_db', async(req, res) => {
+app.get('/rebuild_db', async(req, res) => {
 	if(rebuilding){
 		return res.status(425).send("Rebuild is already in progress, please wait.");
 	}
@@ -49,7 +50,6 @@ index.get('/rebuild_db', async(req, res) => {
 	
 	rebuilding = true;
 	let rstart = new Date().getTime();
-	console.log();
 	try{
 		await lib.rebuild(SAVE_SQL_PATH, MIGRATIONS_DIR)
 	}catch(err){
@@ -61,27 +61,30 @@ index.get('/rebuild_db', async(req, res) => {
 	res.send(`Rebuilt DB in ${(new Date().getTime() - rstart)/1000} seconds from: ${source}. <br><a href="/">Back</a>`);
 });
 
-index.get('/save_db', async(req, res) => {
+app.get('/save_db', async(req, res) => {
 	if(rebuilding){
 		return res.status(425).send("Rebuild is in progress, please retry later.");
 	}
 	if(req.query.file){
 		SAVE_SQL_PATH = req.query.file;
 	}
-	console.log();
-	await lib.save(SAVE_SQL_PATH);
-	console.log("Saved database state to SQL file!");
-	res.send(`Saved database & current migrations to SQL File: <b>${SAVE_SQL_PATH}</b> <br><a href="/">Back</a>`);
+	if(!SAVE_SQL_PATH) return res.status(500).send('Error: No file has been loaded yet - cannot save!');
+	try {
+		await lib.save(SAVE_SQL_PATH);
+		console.log("Saved database state to SQL file!");
+		res.send(`Saved database & current migrations to SQL File: <b>${SAVE_SQL_PATH}</b> <br><a href="/">Back</a>`);
+	}catch(err){
+		res.status(500).send('Error saving: ' + err);
+	}
 });
 
-index.get('/terminate', async(req, res) => {
-	console.log("\nShutting down...");
-	res.send(`Terminated ${PROGRAM_NAME}. <br><a href="/">Back</a>`);
-	await lib.cleanup();
-	process.exit(0);
+app.get('/terminate', async(req, res) => {
+	console.warn("\nShutting down...");
+	res.send(`Terminating ${PROGRAM_NAME}. <br><a href="/">Back</a>`);
+	await stopServer();
 });
 
-index.get('/', (req, res) => {
+app.get('/', (req, res) => {
 	let r = `<title>${PROGRAM_NAME}</title>
 	<h1>${PROGRAM_NAME}</h1> 
 	<b>Loaded: </b>${SAVE_SQL_PATH} <br>
@@ -110,9 +113,10 @@ const prompt = async(question)=> {
 /**
  * Launch the server, building the Docker container & database as-needed.
  */
-const startServer = async() => {
+const startServer = async(initialFile=null) => {
+	SAVE_SQL_PATH = initialFile;
 	try{
-		index.listen(HTTP_PORT, () => console.log(`HTTP Controls listening on http://localhost:${HTTP_PORT} !`));
+		server = app.listen(HTTP_PORT, () => console.log(`HTTP Controls listening on http://localhost:${HTTP_PORT} !`));
 		if(TABLES_DIR){
 			await lib.createFromTables(TABLES_DIR, MIGRATIONS_DIR, sqlDefs, dockerDefs);
 		}else{
@@ -125,7 +129,7 @@ const startServer = async() => {
 		await stopServer();
 		throw err;
 	}
-}
+};
 
 
 /**
@@ -133,7 +137,7 @@ const startServer = async() => {
  */
 const stopServer = async() => {
 	return new Promise( res => {
-		index.close(() => {
+		server.close(() => {
 			console.log('HTTP server closed.');
 			res(lib.cleanup());
 		});
@@ -155,7 +159,7 @@ const waitForUserExit = async() => {
 	console.log("Terminating...");
 	await lib.cleanup();
 	process.exit(0);
-}
+};
 
 
 if (require.main === module) {

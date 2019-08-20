@@ -40,13 +40,13 @@ const init = async(sql_save, migrations_dir, tables_dir, sql_opts, docker_opts=n
     }
     await sql.init(sql_opts);
     if(!tables_dir){
-        await init_from_file(sql_save, migrations_dir);
+    	if(sql_save) await init_from_file(sql_save, migrations_dir);
     }else{
         await init_from_tables(tables_dir);
     }
     created = true;
     return true;
-}
+};
 
 /**
  * Build the database using a save file. Also checks for new migrations, and applies them.
@@ -63,6 +63,7 @@ const load = async(save_file, migrations, sql_opts, docker_opts) => {
  * Build the database fresh, using the tables within the given directory. 
  * Assumes all migrations are up to date with the current table structure.
  * @param {string} tables_dir Path to directory containing the table SQL files.
+ * @param {string} migrations Path to the directory containing DB migrations.
  * @param {object} sql_opts The options for the SQL database.
  * @param {object} docker_opts The options for the Docker instance.
  */
@@ -94,7 +95,7 @@ const save = async(sql_save=null, migrations_dir=null) => {
     migrations_dir = migrations_dir || migrations_dir_default;
     let known_migrations = await migrations.findAll(migrations_dir);
 	return sql.dump(sql_save, known_migrations);
-}
+};
 
 /** Kill Docker. */
 const cleanup = async() => {

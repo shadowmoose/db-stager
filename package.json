@@ -1,10 +1,9 @@
 {
   "name": "db-stager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "scripts": {
-    "debug_windows": "node --inspect index.js",
-    "release": "release-it"
+    "debug_windows": "node --inspect index.js"
   },
   "dependencies": {
     "command-line-args": "^5.1.1",
