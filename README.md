@@ -13,8 +13,8 @@ While running, the program exposes a local webserver+REST API, which allows user
 ## Requirements:
 Node.js, and Docker (daemon installed & running). You do not need to have any Docker images pre-installed.
 
-## Set Up:
-Install the required Node packages by running ```npm install```.
+## Installation & Set Up:
+Install the required Node packages by running ```npm install db-stager```.
 
 Generate the configuration file by calling ```node ./indexex.js --build_config```. This will generate a configuration file with the default values set, and you are going to want to edit them before launch. You may also use command-line parameters, but these are not yet finalized or documented. See [config.js](./config.js).
 
