@@ -1,20 +1,28 @@
 {
   "name": "db-stager",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": false,
   "description": "An easy-to-use MySQL Database staging tool for CI.",
-  "keywords": ["docker", "mysql", "staging", "tool"],
+  "keywords": [
+    "docker",
+    "mysql",
+    "staging",
+    "tool"
+  ],
   "homepage": "https://github.com/shadowmoose/db-stager",
   "bugs": "https://github.com/shadowmoose/db-stager/issues",
   "license": "MIT",
-  "author": {"name":  "Mike J"},
+  "author": {
+    "name": "Mike J"
+  },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/shadowmoose/db-stager.git"
+    "type": "git",
+    "url": "https://github.com/shadowmoose/db-stager.git"
   },
   "scripts": {
     "debug_windows": "node --inspect index.js"
   },
+  "bin": "./index.js",
   "dependencies": {
     "command-line-args": "^5.1.1",
     "dockerode": "^2.5.8",

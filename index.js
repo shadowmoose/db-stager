@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 const args = require('./config');
 const lib = require('./lib');
