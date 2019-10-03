@@ -25,7 +25,7 @@ const request = async(path, query={}) => {
 /**
  * Tells the running server that it should reload the existing Database, using a given save file.
  * 
- * @param {String} fileName The name of the locally-saved SQL file to recreate tbales from.
+ * @param {String} fileName The name of the locally-saved SQL file to recreate tables from.
  */
 const rebuild = async(fileName=null) => {
     return await request('rebuild_db', {file: fileName})
