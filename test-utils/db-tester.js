@@ -16,21 +16,21 @@ let pool = null;
 let user, password, database, port, host;
 
 const init = async () => {
-	user = args.user_name || user;
-	password = args.user_pass || password;
-	database = args.db_name || database;
-	port = args.port || port;
-	host = args.host || host;
+    user = args.user_name || user;
+    password = args.user_pass || password;
+    database = args.db_name || database;
+    port = args.port || port;
+    host = args.host || host;
 
-	if(!pool){
-		pool = mysql.createPool({
-			host,
-			port,
-			user,
-			password,
-			database,
-			waitForConnections: true,
-			connectionLimit: 5,
+    if(!pool){
+        pool = mysql.createPool({
+            host,
+            port,
+            user,
+            password,
+            database,
+            waitForConnections: true,
+            connectionLimit: 5,
             multipleStatements: true,
             namedPlaceholders: true
         });
@@ -59,7 +59,7 @@ const parseWhere = (inputWhere, inputParams={}) => {
         for(let k in where){
             let v = where[k];
             let sk = k? k.replace(/[\W_]+/g,"") : k;
-            if(!sk || params[sk]) sk = 'param-'+(idx++);
+            if(!sk || sk in params) sk = 'param-'+(idx++);
             params[sk] = v;
             st.push(`${k} = :${sk}`);
         }
@@ -189,7 +189,7 @@ class Table{
      * @param {String} order_by A MySQL-formatted order string, missing 'ORDER BY'.
      */
     async selectOne(where, params, order_by=''){
-        let ret = await select(this.name, where, params, order_by, 1)
+        let ret = await this.select(where, params, order_by, 1)
         return ret.length? ret[0] : null;
     }
 }
