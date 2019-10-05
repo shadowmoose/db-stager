@@ -81,16 +81,30 @@ api.withLock(() => {
   console.error('Caught error:', err) // All errors thrown will be passed through as well.
 });
 
-// Another option, if you want to directly use the Lock:
-const release = await api.getLock();
-// ... Do stuff here
-release(); // Release the lock. Make sure this always gets called!
+
+// Another option, if you want to directly use the Lock in a sample Jest test:
+let release = null;
+describe('exclusiveDatabaseTests', () => {
+  beforeAll(() => {
+    release = await api.getLock(); // Obtain the Lock before testing. The release() function is returned.
+  })
+  afterAll(() => {
+    release(); // Release the lock after all tests are done. Make sure this always gets called!
+  })
+
+  test('do something in db', () => {
+    // All test() cases will run sequentially in Jest, and all are protected by exclusive access to the Lock.
+    await api.reload('snapshot.sql') // Do any testing you want here...
+  })
+})
 ```
 
 To avoid single clients holding the lock indefinitely, 
 there are options on the server-side to specify a maximum Lock duration.
 
-*Note: If you want to use the Lock system to run certain tests serially, make sure each test is wrapped in the Lock!*
+*__Note:__ If you want to use the Lock system to run certain tests serially, make sure each test is wrapped in the Lock!*
+
+*__Jest Side-Note:__ If **all** your tests need exclusive DB access, it's simpler to skip Locking and use Jest's `--runInBand` instead.*
 
 ### SQL Table Test Wrapper:
 
