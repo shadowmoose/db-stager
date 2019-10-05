@@ -1,4 +1,4 @@
-# db-stager
+# db-stager [![npm version](https://badge.fury.io/js/db-stager.svg)](https://www.npmjs.com/package/db-stager)
 
 **This is a WIP.**
 
