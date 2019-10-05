@@ -10,8 +10,10 @@ While running, the program exposes a local REST API, which allows users (or unit
 
 This allows for automated unit tests to rapidly switch to (or rebuild) multiple database environments safely, with a very low impact on test suite speeds, while silmultaneously keeping every testing environment synchronized.
 
+This project can be run locally, as part of integrated unit tests, or it can be remotely run and accessed as part of a group testing system.
+
 ## Requirements:
-Node.js, and Docker (daemon installed & running). You do not need to have any Docker images pre-installed.
+Node.js, and Docker (daemon installed & running) if you wish to use a containerized MySQL Server. You do not need to have any Docker images pre-installed.
 
 ## Installation & Set Up:
 Install the required Node packages by running ```npm install db-stager```.
