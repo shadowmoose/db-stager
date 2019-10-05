@@ -68,15 +68,15 @@ const {api} = require('./index');
 
 // To obtain a Lock safely, as a Promise that automatically releases it when finished:
 api.withLock(() => {
-	// All code within this function can now run without worry of being interrupted.
-	console.log('Obtained lock!');
-    await api.reload('my-database');  // You can safely load and work exclusively with the database now.
-	return 'test'
+  // All code within this function can now run without worry of being interrupted.
+  console.log('Obtained lock!');
+  await api.reload('my-database');  // You can safely load and work exclusively with the database now.
+  return 'test'
 }).then( res => {
-	// The lock is automatically released, even if an error occurs.
-	console.log('Exited lock with value:', res); // returned value is passed through, will return 'test' in this case.
+  // The lock is automatically released, even if an error occurs.
+  console.log('Exited lock with value:', res); // returned value is passed through, will return 'test' in this case.
 }).catch(err => {
-	console.error('Caught error:', err) // All errors thrown will be passed through as well.
+  console.error('Caught error:', err) // All errors thrown will be passed through as well.
 });
 
 // Another option, if you want to directly use the Lock:
