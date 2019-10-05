@@ -85,14 +85,14 @@ api.withLock(() => {
 // Another option, if you want to directly use the Lock in a sample Jest test:
 let release = null;
 describe('exclusiveDatabaseTests', () => {
-  beforeAll(() => {
+  beforeAll(async() => {
     release = await api.getLock(); // Obtain the Lock before testing. The release() function is returned.
   })
-  afterAll(() => {
+  afterAll(async() => {
     release(); // Release the lock after all tests are done. Make sure this always gets called!
   })
 
-  test('do something in db', () => {
+  test('do something in db', async() => {
     // All test() cases will run sequentially in Jest, and all are protected by exclusive access to the Lock.
     await api.reload('snapshot.sql') // Do any testing you want here...
   })
