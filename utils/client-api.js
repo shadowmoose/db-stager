@@ -1,13 +1,15 @@
 const http = require('http');
 const args = require('../config');
 const querystring = require('querystring');
+const WebSocket = require('ws');
 
 const PORT = args.http_port;
+const HOST = args.http_host;
 
 const request = async(path, query={}) => {
     let qs = querystring.stringify(query);
     return new Promise( (resolve, reject) => {
-        http.get(`http://localhost:${PORT}/${path}?${qs}`, (resp) => {
+        http.get(`http://${HOST}:${PORT}/${path}?${qs}`, (resp) => {
             let data = '';
             resp.on('data', (chunk) => {
                 data += chunk;
@@ -19,7 +21,7 @@ const request = async(path, query={}) => {
             reject(err);
         });
     });
-}
+};
 
 
 /**
@@ -49,6 +51,43 @@ const terminate = async() => {
     return await request('terminate')
 };
 
+/**
+ * Obtain sole ownership of a server-wide Lock. Be sure to close this!
+ *
+ * @returns {function} The release() function, which will release the Lock.
+ */
+const getLock = async() => {
+    return new Promise( (resolve, reject) => {
+        const ws = new WebSocket(`ws://${HOST}:${PORT}`);
+        ws.on('message', (data)=>{
+            resolve(()=>{ws.close()})
+        });
+        ws.on('close', ()=>{
+            reject('Disconnected from server while awaiting Lock!')
+        });
+        ws.on('error', ()=>{
+            reject('Encountered error while awaiting Lock!')
+        });
+    })
+};
+
+
+/**
+ * Obtains sole server-wide ownership of the Database API Lock, runs the given function, and releases the lock.
+ * Does not handle error catching.
+ *
+ * @param fnc The callback - possibly async - to run before freeing the Lock.
+ * @returns {object} The result of running the callback.
+ */
+const withLock = async(fnc) => {
+    let release = await getLock();
+    try{
+        return await fnc();
+    }finally{
+        release();
+    }
+};
+
 
 module.exports = {
     rebuild,
@@ -56,6 +95,9 @@ module.exports = {
     reload: rebuild,
 
     terminate,
+
+    getLock,
+    withLock,
 
     save
 };

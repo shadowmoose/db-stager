@@ -49,9 +49,46 @@ const {api} = require('db-stager');
 
 await api.reload("saveName.sql"); // Load an existing save. This is a fast operation.
 await api.save('outputSaveName.sql'); // Save the current database state to a file.
-await api.terminate(); // Kill the whole Docker SQL server, mostly used in fringe cases.
+await api.terminate(); // Kill the whole Docker SQL server.
+await api.withLock(fnc); // Block until a lock is obtained, then run the given function.
 ```
 If you'll be reloading databases between tests, make sure that your database-using tests are running single-threaded.
+See the "Locking" section for more details.
+
+### Exclusive Locking
+Many testing suites will run your test function asynchronously. 
+Historically, this has always been an issue when the tests each rely on a shared resource (in this case, the Database).
+
+To help solve this problem, the db-stager API comes equipped with a server-wide Lock. 
+This can be obtained on a local or remote db-stager server, and the Lock will be granted to exclusively one client at a time.
+
+This is made simple in the client API, and can be used as follows:
+```js
+const {api} = require('./index');
+
+// To obtain a Lock safely, as a Promise that automatically releases it when finished:
+api.withLock(() => {
+	// All code within this function can now run without worry of being interrupted.
+	console.log('Obtained lock!');
+    await api.reload('my-database');  // You can safely load and work exclusively with the database now.
+	return 'test'
+}).then( res => {
+	// The lock is automatically released, even if an error occurs.
+	console.log('Exited lock with value:', res); // returned value is passed through, will return 'test' in this case.
+}).catch(err => {
+	console.error('Caught error:', err) // All errors thrown will be passed through as well.
+});
+
+// Another option, if you want to directly use the Lock:
+const release = await api.getLock();
+// ... Do stuff here
+release(); // Release the lock. Make sure this always gets called!
+```
+
+To avoid single clients holding the lock indefinitely, 
+there are options on the server-side to specify a maximum Lock duration.
+
+*Note: If you want to use the Lock system to run certain tests serially, make sure each test is wrapped in the Lock!*
 
 ### SQL Table Test Wrapper:
 

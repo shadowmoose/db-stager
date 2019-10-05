@@ -2,11 +2,16 @@
 
 const fs = require('fs');
 const args = require('./config');
-const lib = require('./lib');
+const lib = require('./lib/lib');
 const express = require('express');
 const readline = require('readline');
-const db_tester = require('./test-utils/db-tester');
-const client_api = require('./test-utils/client-api');
+const db_tester = require('./utils/db-tester');
+const client_api = require('./utils/client-api');
+const WebSocket = require('ws');
+const http = require('http');
+const AsyncLock = require('async-lock');
+
+const lock = new AsyncLock();
 const app = express();
 
 
@@ -25,11 +30,15 @@ const dockerDefs = args.use_docker? {
 } : false;
 
 const HTTP_PORT = args.http_port;
+const HTTP_HOST = args.http_host;
+const MAX_LOCK_MS = args.http_max_lock_ms;
 const MIGRATIONS_DIR = args.migrations;
 const TABLES_DIR = args.tables;
 const PROGRAM_NAME = `db-stager`;
 let SAVE_SQL_PATH = args.save_file? args.save_file : null;
 let server = null;
+let wss = null;
+let wssPing = null;
 
 
 /** Set on init, this is a lambda to rebuild the DB data from SQL scripts. */
@@ -116,9 +125,60 @@ const prompt = async(question)=> {
  * Launch the server, building the Docker container & database as-needed.
  */
 const startServer = async(initialFile=null) => {
+	if(server) throw new Error('Attempted to restart running server!');
 	SAVE_SQL_PATH = initialFile;
 	try{
-		server = app.listen(HTTP_PORT, () => console.log(`HTTP Controls listening on http://localhost:${HTTP_PORT} !`));
+		//initialize http server
+		server = http.createServer(app);
+		//initialize the WebSocket server instance
+		wss = new WebSocket.Server({ server });
+		let clientID = 0;
+
+		wss.on('connection', (ws) => {
+			ws.isAlive = true;
+			ws.id = clientID++;
+
+			let resolve = null;
+			let p = new Promise((res)=> {resolve = res});
+
+			ws.on('pong', () => {ws.isAlive = true});
+			ws.on('close', () => {
+				resolve();
+			});
+			ws.on('error', () => {
+				resolve();
+			});
+
+			lock.acquire('key', () => {
+				try{
+					ws.send('OK');
+				}catch(err){
+					console.error(err);
+					ws.close();
+				}
+				let rp = p;
+				if(MAX_LOCK_MS){
+					rp = Promise.race([p, new Promise((res, rej) => {
+						setTimeout(()=> {rej('Client lock timed out.'); ws.close()}, MAX_LOCK_MS);
+					})]);
+				}
+				return rp; // Return a Promise, which awaits the socket close before resolving.
+			}).catch((err)=>{console.error(err)})
+		});
+
+		//start our server
+		server.listen(HTTP_PORT, HTTP_HOST, () => {
+			console.debug(`Started the ${PROGRAM_NAME} server on http://${HTTP_HOST}:${server.address().port}/`);
+		});
+
+		wssPing = setInterval(function ping() {
+			wss.clients.forEach(function each(ws) {
+				if (ws.isAlive === false) return ws.terminate();
+				ws.isAlive = false;
+				ws.ping();
+			});
+		}, 15000);
+
 		if(TABLES_DIR){
 			await lib.createFromTables(TABLES_DIR, MIGRATIONS_DIR, sqlDefs, dockerDefs);
 		}else{
@@ -139,9 +199,12 @@ const startServer = async(initialFile=null) => {
  */
 const stopServer = async() => {
 	return new Promise( res => {
-		server.close(() => {
-			console.log('HTTP server closed.');
-			res(lib.cleanup());
+		clearInterval(wssPing);
+		wss.close( () => {
+			server.close(() => {
+				console.debug('HTTP server closed.');
+				res(lib.cleanup());
+			});
 		});
 	});
 };

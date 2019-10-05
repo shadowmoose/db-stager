@@ -5,7 +5,9 @@ const fs   = require('fs');
 const optionDefinitions = [
 	{ name: 'help', alias: 'h', type: Boolean, default: false, desc: 'Print help message and exit.'},
 	{ name: 'build_config', alias: 'b', type: Boolean, default: false, desc: 'Generate a config file with these options.'},
-	{ name: 'http_port', type: Number, default: 3001, desc: 'The port to open a HTTP control panel over.'},
+	{ name: 'http_port', type: Number, default: 3001, desc: 'The port to open/access a HTTP control panel over.'},
+	{ name: 'http_host', type: String, default: 'localhost', desc: 'The host to open/access a HTTP control panel over.'},
+	{ name: 'http_max_lock_ms', type: Number, default: 0, desc: 'The maximum time, in milliseconds, that a client may own the API Lock.'},
 	{ name: 'sql_port', type: String, default: '3306', desc: 'The port to expose for MySQL.'},
 	{ name: 'sql_host', type: String, default: '0.0.0.0', desc: 'The Host to use for the local MySQL server.'},
 	{ name: 'sql_root_pass', alias: 'r', type: String, default: 'root', desc: 'Password for the `root` MySQL account.'},
