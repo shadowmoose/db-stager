@@ -20,6 +20,8 @@ Install the required Node packages by running ```npm install db-stager```.
 
 Generate the configuration file by calling ```db-stager --build_config```. This will generate a configuration file with the default values set, and you are going to want to edit them before launch. You may also use command-line parameters, but these are not yet finalized or documented. See [config.js](./config.js).
 
+For configuring programatically, db-stager also exposes a `configure({})` method, which accepts the same key+value combos. When running db-stager as a standalone program, it will also accept the same key+value pairs as Command Line Arguments. If a value is not specified through one of these methods, db-stager will fall back to a default value, in the order: `Programatic->Command Line->Config File->default`.
+
 
 ## Using db-stager in Testing Frameworks:
 *This is a sample way to use this application. Your mileage may vary.*
