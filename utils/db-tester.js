@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const config = require('../config').opts;
+const {log} = require('../lib/log');
 
 
 let pool = null;
@@ -63,8 +64,8 @@ const parseWhere = (inputWhere, inputParams={}) => {
 
 const query = async(sql, params={}, stripExt=true) => {
     await init();
-    console.debug(sql, JSON.stringify(params));
-    let ret = await pool.query(sql, params)
+    log.debug(sql, JSON.stringify(params));
+    let ret = await pool.query(sql, params);
     return stripExt ? ret[0] : ret;
 };
 

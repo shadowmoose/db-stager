@@ -4,10 +4,10 @@ const fs = require('fs');
 const config = require('./config');
 const lib = require('./lib/lib');
 const express = require('express');
-const readline = require('readline');
 const db_tester = require('./utils/db-tester');
 const client_api = require('./utils/client-api');
 const AsyncLock = require('async-lock');
+const {log, transports} = require('./lib/log');
 
 const lock = new AsyncLock();
 const app = express();
@@ -26,7 +26,6 @@ let rebuilding = true;
 
 
 app.get('/rebuild_db', async(req, res) => {
-	console.log('rebuild');
 	if(rebuilding){
 		return res.status(425).send("Rebuild is already in progress, please wait.");
 	}
@@ -63,7 +62,7 @@ app.get('/save_db', async(req, res) => {
 	if(!SAVE_SQL_PATH) return res.status(500).send('Error: No file has been loaded yet - cannot save!');
 	try {
 		await lib.save(SAVE_SQL_PATH);
-		console.log("Saved database state to SQL file!");
+		log.info("Saved database state to SQL file!");
 		res.send(`Saved database & current migrations to SQL File: <b>${SAVE_SQL_PATH}</b> <br><a href="/">Back</a>`);
 	}catch(err){
 		res.status(500).send('Error saving: ' + err);
@@ -71,7 +70,7 @@ app.get('/save_db', async(req, res) => {
 });
 
 app.get('/terminate', async(req, res) => {
-	console.warn("\nShutting down...");
+	log.debug("Shutting down...");
 	res.send(`Terminating ${PROGRAM_NAME}. <br><a href="/">Back</a>`);
 	await stopServer();
 });
@@ -94,7 +93,7 @@ app.ws('/lock', function(ws, req) {
 	let resolve = null;
 	let p = new Promise((res)=> {resolve = res});
 
-	ws.on('pong', () => {ws.isAlive = true; console.log('Pong')});
+	ws.on('pong', () => {ws.isAlive = true;});
 	ws.on('close', () => {
 		wsClients = wsClients.filter(c => c !== ws);
 		resolve();
@@ -107,7 +106,7 @@ app.ws('/lock', function(ws, req) {
 		try{
 			ws.send('OK');
 		}catch(err){
-			console.error(err);
+			log.error(err);
 			ws.close();
 		}
 		let rp = p;
@@ -117,23 +116,9 @@ app.ws('/lock', function(ws, req) {
 			})]);
 		}
 		return rp; // Return a Promise, which awaits the socket close before resolving.
-	}).catch((err)=>{console.error(err)});
+	}).catch((err)=>{log.error(err)});
 	wsClients.push(ws);
 });
-
-
-const prompt = async(question)=> {
-	const rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout
-	});
-	return new Promise(resolve => {
-		rl.question(question, (input) => {
-			rl.close();
-			resolve(input);
-		})
-	});
-};
 
 
 /**
@@ -147,7 +132,7 @@ const startServer = async(options=null) => {
 
 		//start our server
 		server = app.listen(args.http_port, args.http_host);
-		console.debug(`Started the ${PROGRAM_NAME} server on http://${args.http_host}:${args.http_port}/`);
+		log.debug(`Started the ${PROGRAM_NAME} server on http://${args.http_host}:${args.http_port}/`);
 
 		wssPing = setInterval(() => {
 			wsClients.forEach((ws) => {
@@ -164,8 +149,7 @@ const startServer = async(options=null) => {
 		}
 		rebuilding = false;
 	}catch(err){
-		console.error("Encountered error booting server. Cleaning up resources before raising...");
-		console.error(err);
+		log.error("Encountered error booting server. Cleaning up resources before raising...", {err});
 		await stopServer();
 		throw err;
 	}
@@ -179,36 +163,29 @@ const stopServer = async() => {
 	return new Promise( res => {
 		clearInterval(wssPing);
 		server.close(() => {
-			console.debug('HTTP server closed. Cleaning up MySQL...');
+			log.debug('HTTP server closed.');
 			res(lib.cleanup());
 		});
 	});
 };
 
-
 /**
- * If run directly from command line, this program supports a
- * (really basic) terminal-side exit/save option.
+ * Change the log level of db-stager.
+ *
+ * @param level
  */
-const waitForUserExit = async() => {
-	let inp = await prompt("Press enter to exit (type 's' to save any database changes before exit): ");
-
-	if(inp && inp.toLowerCase().includes('s')){
-		await lib.save(SAVE_SQL_PATH, args.migrations);
-		console.log("Saved database state to SQL file: " + SAVE_SQL_PATH);
-	}
-	console.log("Terminating...");
-	await lib.cleanup();
-	process.exit(0);
+const logLevel = (level='info') => {
+	transports.console.level = level;
 };
 
 
 if (require.main === module) {
+	logLevel('debug');
 	config.parseFromArgs();
-	console.log("Launching standalone...");
-	startServer().then(() => waitForUserExit()).catch( err =>{
-		console.error(err);
-		console.error('Shutting down standalone server.');
+	log.info("Launching standalone. Visit the http control panel to interact with DB!");
+	startServer().catch( err =>{
+		log.error(err);
+		log.error('Shutting down standalone server.');
 		process.exit(1);
 	});
 }
@@ -222,6 +199,7 @@ module.exports = {
 	stop: stopServer,
 	terminate: stopServer,
 	configure: config.configure,
+	logLevel,
 
 	dbTester: db_tester,
 	api: client_api
