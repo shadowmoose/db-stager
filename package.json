@@ -24,15 +24,16 @@
   },
   "bin": "./index.js",
   "dependencies": {
-    "async-lock": "^1.2.2",
-    "command-line-args": "^5.1.1",
+    "async-lock": "1.2.2",
+    "command-line-args": "5.1.1",
     "dockerode": "^2.5.8",
-    "express": "^4.17.1",
-    "glob": "^7.1.4",
-    "js-yaml": "^3.13.1",
+    "express": "4.17.1",
+    "express-ws": "4.0.0",
+    "glob": "7.1.4",
+    "js-yaml": "3.13.1",
     "mysql2": "latest",
-    "mysqldump": "^3.0.0",
-    "pg-minify": "^1.4.1",
-    "ws": "^7.1.2"
+    "mysqldump": "3.1.0",
+    "pg-minify": "1.4.1",
+    "ws": "7.1.2"
   }
 }

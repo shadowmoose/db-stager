@@ -1,40 +1,23 @@
 const mysql = require('mysql2/promise');
-const config = require('../config');
+const config = require('../config').opts;
 
-
-const args = {
-    host: config.sql_host,
-    port: config.sql_port,
-    db_name: config.sql_db,
-    root_pass: config.sql_root_pass,
-    user_name: config.sql_user,
-    user_pass: config.sql_pass  
-};
 
 let pool = null;
 
-let user, password, database, port, host;
-
 const init = async () => {
-    user = args.user_name || user;
-    password = args.user_pass || password;
-    database = args.db_name || database;
-    port = args.port || port;
-    host = args.host || host;
-
     if(!pool){
         pool = mysql.createPool({
-            host,
-            port,
-            user,
-            password,
-            database,
+            host: config.sql_host,
+            port: config.sql_port,
+            user: config.sql_user,
+            password: config.sql_pass,
+            database: config.sql_db,
             waitForConnections: true,
             connectionLimit: 5,
             multipleStatements: true,
             namedPlaceholders: true
         });
-        await pool.query('USE ' + database);
+        await pool.query('USE ' + config.sql_db);
     }
     return pool;
 };
@@ -42,13 +25,13 @@ const init = async () => {
 
 /**
  * Accepts a variety of inputs, and parses them into a single "WHERE" MySQL String.
- * 
+ *
  * __WHERE can be:__
- *    String: representing the raw "where" section of the SQL query, 
+ *    String: representing the raw "where" section of the SQL query,
  *    Array[String]: an array of "Key<>=Value" comparison clauses, using standard SQL methods
  *    Object: A group of "key=value" pairs. Only supports "=" for comparison of these.
- * @param {String|Array|Object} inputWhere 
- * @param {Object} inputParams 
+ * @param {String|Array|Object} inputWhere
+ * @param {Object} inputParams
  */
 const parseWhere = (inputWhere, inputParams={}) => {
     let where = inputWhere? JSON.parse(JSON.stringify(inputWhere)) : '';
@@ -75,7 +58,7 @@ const parseWhere = (inputWhere, inputParams={}) => {
         where,
         params
     }
-}
+};
 
 
 const query = async(sql, params={}, stripExt=true) => {
@@ -120,11 +103,11 @@ class Table{
     async validateTable(){
         if(this.verified) return true;
         let res = await exists('information_schema.tables', {
-            table_schema: database,
+            table_schema: config.sql_db,
             table_name: this.name
         });
         this.verified = res;
-        if(!res) throw new Error(`The table '${database}.${this.name}' does not exist!`)
+        if(!res) throw new Error(`The table '${config.sql_db}.${this.name}' does not exist!`);
         return res;
     }
 
@@ -189,7 +172,7 @@ class Table{
      * @param {String} order_by A MySQL-formatted order string, missing 'ORDER BY'.
      */
     async selectOne(where, params, order_by=''){
-        let ret = await this.select(where, params, order_by, 1)
+        let ret = await this.select(where, params, order_by, 1);
         return ret.length? ret[0] : null;
     }
 }
@@ -201,4 +184,4 @@ module.exports = {
     exists,
     count,
     Table
-}
+};

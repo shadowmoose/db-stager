@@ -1,15 +1,13 @@
 const http = require('http');
-const args = require('../config');
+const args = require('../config').opts;
 const querystring = require('querystring');
 const WebSocket = require('ws');
 
-const PORT = args.http_port;
-const HOST = args.http_host;
 
 const request = async(path, query={}) => {
     let qs = querystring.stringify(query);
     return new Promise( (resolve, reject) => {
-        http.get(`http://${HOST}:${PORT}/${path}?${qs}`, (resp) => {
+        http.get(`http://${args.http_host}:${args.http_port}/${path}?${qs}`, (resp) => {
             let data = '';
             resp.on('data', (chunk) => {
                 data += chunk;
@@ -58,15 +56,15 @@ const terminate = async() => {
  */
 const getLock = async() => {
     return new Promise( (resolve, reject) => {
-        const ws = new WebSocket(`ws://${HOST}:${PORT}`);
+        const ws = new WebSocket(`ws://${args.http_host}:${args.http_port}/lock`);
         ws.on('message', (data)=>{
             resolve(()=>{ws.close()})
         });
         ws.on('close', ()=>{
             reject('Disconnected from server while awaiting Lock!')
         });
-        ws.on('error', ()=>{
-            reject('Encountered error while awaiting Lock!')
+        ws.on('error', (err)=>{
+            reject('Encountered error while awaiting Lock: ' + err)
         });
     })
 };
